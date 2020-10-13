@@ -17,11 +17,14 @@ class StochasticGradientDescent:
             max_accuracy = 0
             current_best_model = None
             index = 0
+            losses = get_param(losses,["hinge"])
+            learning_rates = get_param(learning_rates,["optimal"])
+            tols = get_param(tols,[1e-3])
             for loss in losses:
                 for learning_rate in learning_rates:
                     for tol in tols:
                         print("Number "+str(index)+" training started")
-                        model = SGDClassifier(loss=get_param(loss,"hinge"), learning_rate=get_param(learning_rate,"optimal"), penalty="l2", max_iter=get_param(max_iter,500), tol=get_param(tol,1e-3))
+                        model = SGDClassifier(loss=loss, learning_rate=learning_rate, penalty="l2", max_iter=get_param(max_iter,500), tol=tol)
                         model.fit(X_train, y_train)
                         y_val_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_val]))
                         accuracy = accuracy_score(y_val, y_val_pred)
@@ -40,8 +43,9 @@ class StochasticGradientDescent:
         print('The validation accuracy is '+str(max_accuracy))
         return current_best_model
 
-    def predict(self, model, X_test, y_test):
+    def predict(self, model, X_test, y_test, filename):
         y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
         df = pd.DataFrame ({'message': X_test,'true_label': y_test,'pred_label': y_pred})
-        df.to_csv('out.csv', index=False)  
+        df.to_csv(filename+'.csv', index=False)  
         print('The prediction accuracy is '+str(accuracy_score(y_test, y_pred)))
+        print('---------------------------------------------------------------------------')

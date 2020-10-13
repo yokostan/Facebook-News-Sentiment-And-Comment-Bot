@@ -36,14 +36,19 @@ def train_test_val_split(X, y, train_ratio, test_ratio, val_ratio=0):
 
 def main():
     post_df, comment_df, train_ratio, test_ratio, val_ratio = read_csv_to_df()
-    # sentiment analysis
+    # problem 1: sentiment analysis
+    # reminder: the data split is different each time we run the program
+    #           so the models are only comparable from the same run
     post_X_train, post_y_train, post_X_test, post_y_test, post_X_val, post_y_val = train_test_val_split(post_df['message'].tolist(), post_df['label'].tolist(), train_ratio, test_ratio, val_ratio)
     if all(v is not None for v in [post_X_train, post_y_train, post_X_test, post_y_test]):
-        # method 1(baseline): sgd model
+        # method 1: sgd model
         sgd = StochasticGradientDescent()
+        # baseline: using default values for parameters
+        model = sgd.train(post_X_train, post_y_train, post_X_val, post_y_val)
+        sgd.predict(model, post_X_test, post_y_test, 'sgd_baseline')
+        # sgd model with tuned paramters
         model = sgd.train(post_X_train, post_y_train, post_X_val, post_y_val, losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
-        sgd.predict(model, post_X_test, post_y_test)
-
+        sgd.predict(model, post_X_test, post_y_test, 'sgd_tuned')
 
 if __name__ == '__main__':
    main()

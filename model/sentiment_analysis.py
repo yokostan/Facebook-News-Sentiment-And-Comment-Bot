@@ -1,5 +1,6 @@
 # this file is for models to perform sentiment_analysis
-from pandas import *
+import numpy as np
+import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
@@ -41,4 +42,6 @@ class StochasticGradientDescent:
 
     def predict(self, model, X_test, y_test):
         y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
+        df = pd.DataFrame ({'message': X_test,'true_label': y_test,'pred_label': y_pred})
+        df.to_csv('out.csv', index=False)  
         print('The prediction accuracy is '+str(accuracy_score(y_test, y_pred)))

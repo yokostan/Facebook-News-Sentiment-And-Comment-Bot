@@ -27,7 +27,7 @@ def train_test_val_split(df, type, train_ratio, test_ratio, val_ratio=0):
     # otherwise, the three ratios should sum up to 1
     if train_ratio + test_ratio + val_ratio - 1 > 1e-5:
         print("please provide eligible train, test, val ratio")
-        return [[]*24]
+        return []*24
     else:
         if type == 'post':
             X = df['message'].to_list()
@@ -45,8 +45,8 @@ def train_test_val_split(df, type, train_ratio, test_ratio, val_ratio=0):
                 X_train, X_val, y0_train, y0_val, y1_train, y1_val, y2_train, y2_val, y3_train, y3_val, \
                 y4_train, y4_val, y5_train, y5_val, y6_train, y6_val = train_test_split(X_train, y0_train, y1_train, y2_train, y3_train, \
                     y4_train, y5_train, y6_train, test_size=val_ratio/(train_ratio+val_ratio), random_state=1) # test_size = second split ratio between train and val
-            return [X_train, X_val, y0_train, y0_val, y1_train, y1_val, y2_train, y2_val, y3_train, y3_val, y4_train, y4_val, y5_train, y5_val, \
-            y6_train, y6_val, X_test, y0_test, y1_test, y2_test, y3_test, y4_test, y5_test, y6_test]
+            return [X_train, X_val, y0_train, y0_val, y1_train, y2_train, y3_train, y4_train, y5_train, y6_train, \
+                y1_val, y2_val, y3_val, y4_val, y5_val, y6_val, X_test, y0_test, y1_test, y2_test, y3_test, y4_test, y5_test, y6_test]
 
 def main():
     post_df, comment_df, train_ratio, test_ratio, val_ratio = read_csv_to_df()

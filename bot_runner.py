@@ -45,8 +45,8 @@ def train_test_val_split(df, type, train_ratio, test_ratio, val_ratio=0):
                 X_train, X_val, y0_train, y0_val, y1_train, y1_val, y2_train, y2_val, y3_train, y3_val, \
                 y4_train, y4_val, y5_train, y5_val, y6_train, y6_val = train_test_split(X_train, y0_train, y1_train, y2_train, y3_train, \
                     y4_train, y5_train, y6_train, test_size=val_ratio/(train_ratio+val_ratio), random_state=1) # test_size = second split ratio between train and val
-            return [X_train, X_test, y0_train, y0_test, y1_train, y1_test, y2_train, y2_test, y3_train, y3_test, y4_train, y4_test, y5_train, y5_test, \
-            y6_train, y6_test, X_val, y0_val, y1_val, y2_val, y3_val, y4_val, y5_val, y6_val]
+            return [X_train, X_val, y0_train, y0_val, y1_train, y1_val, y2_train, y2_val, y3_train, y3_val, y4_train, y4_val, y5_train, y5_val, \
+            y6_train, y6_val, X_test, y0_test, y1_test, y2_test, y3_test, y4_test, y5_test, y6_test]
 
 def main():
     post_df, comment_df, train_ratio, test_ratio, val_ratio = read_csv_to_df()
@@ -58,11 +58,11 @@ def main():
         # method 1: sgd model
         sgd = StochasticGradientDescent()
         # baseline: using default values for parameters
-        model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[16], post_data_list[17])
-        sgd.predict(model, post_data_list[1], post_data_list[3], 'sgd_baseline')
+        model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3])
+        sgd.predict(model, post_data_list[16], post_data_list[17], 'sgd_baseline')
         # sgd model with tuned paramters
-        model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[16], post_data_list[17], losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
-        sgd.predict(model, post_data_list[1], post_data_list[3], 'sgd_tuned')
-        
+        model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3], losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
+        sgd.predict(model, post_data_list[16], post_data_list[17], 'sgd_tuned')
+
 if __name__ == '__main__':
    main()

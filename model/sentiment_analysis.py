@@ -1,5 +1,4 @@
 # this file is for models to perform sentiment_analysis
-import heapq
 import numpy as np
 import pandas as pd
 from sklearn import svm
@@ -7,9 +6,7 @@ from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.metrics.cluster import adjusted_rand_score
 from sklearn.naive_bayes import GaussianNB
-from sklearn.preprocessing import StandardScaler
 
 class GNBModel:
     def __init__(self):

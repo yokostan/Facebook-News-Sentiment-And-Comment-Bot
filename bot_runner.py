@@ -2,6 +2,7 @@
 # the bot_runner is composed of two part
 #   part 1: sentiment analysis
 #   part 2: comment generation
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from model.sentiment_analysis import GNBModel, KMeansModel, StochasticGradientDescent, SVMModel
@@ -21,6 +22,15 @@ def read_csv_to_df():
         elif 'val_ratio =' in line:
             val_ratio = float(line.split('=',1)[1])
     return post_df, comment_df, train_ratio, test_ratio, val_ratio
+
+def remove_null_rows(df):
+    remove_indexes = []
+    for index, row in df.iterrows():
+        if row['react_angry'] == row['react_haha'] == row['react_like'] == row['react_love'] == row['react_sad'] == row['react_wow'] == 0:
+            remove_indexes.append(index)
+        elif row['message'] == np.nan:
+            remove_indexes.append(index)
+    return df.drop(remove_indexes)
 
 def get_sentiment(reactions):
     max_reactions = []
@@ -75,6 +85,7 @@ def main():
     # problem 1: sentiment analysis
     # reminder: the data split is different each time we run the program
     #           so the models are only comparable from the same run
+    post_df = remove_null_rows(post_df)
     post_data_list = train_test_val_split(post_df, 'post', train_ratio, test_ratio, val_ratio)
     if post_data_list is not None:
         X_train = post_data_list[0]

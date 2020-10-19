@@ -4,7 +4,7 @@
 #   part 2: comment generation
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from model.sentiment_analysis import KMeansModel, StochasticGradientDescent
+from model.sentiment_analysis import KMeansModel, StochasticGradientDescent, SVMModel
 
 def read_csv_to_df():
     file = open('.config', "r")
@@ -68,5 +68,10 @@ def main():
         kmeans = KMeansModel()
         model = kmeans.train(post_data_list[0], post_data_list[1], post_data_list[10:16], n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
         kmeans.predict(model, post_data_list[16], post_data_list[18:], post_data_list[18:], 'kmeans')
+
+        # method 3: svm model 
+        svm = SVMModel()
+        model = svm.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3], kernels=['linear', 'poly', 'rbf', 'sigmoid'], gammas=['auto', 'scale'], tols=[1e-5, 1e-4, 1e-3], max_iters=[300, 500])
+        svm.predict(model, post_data_list[16], post_data_list[17], 'svm')
 if __name__ == '__main__':
    main()

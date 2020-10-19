@@ -15,9 +15,7 @@ class GNBModel:
     def __init__(self):
         self.count_vect = CountVectorizer()
 
-    def train(self, X_train, y_train):
-        def get_param(param, default):
-            return param if param is not None else default   
+    def train(self, X_train, y_train):  
         X_train = self.count_vect.fit_transform(['' if x is np.nan else x for x in X_train]).toarray()
         print("training started")
         current_best_model = GaussianNB()
@@ -131,18 +129,18 @@ class KMeansModel():
                 count += 1
         return count/len(y_true)
 
-    def get_sentiment(self, y):
-        sentiment = [0]*len(y)
-        for i in range(len(y)):
-            if y[i] == 2 or y[i] == 3:
+    def get_sentiment(self, reactions):
+        sentiment = [0]*len(reactions)
+        for i in range(len(reactions)):
+            if reactions[i] == 2 or reactions[i] == 3:
                 sentiment[i] = 1
-            elif y[i] == 0 or y[i] == 4:
+            elif reactions[i] == 0 or reactions[i] == 4:
                 sentiment[i] == -1
             else:
                 sentiment[i] == 0
         return sentiment
 
-    def train(self, X_train, X_val, y_val_list, n_clusters_list=None, tols=None, max_iters=None):
+    def train(self, X_train, X_val, y0_val, y_val_list, n_clusters_list=None, tols=None, max_iters=None):
         def get_param(param, default):
             return param if param is not None else default  
 
@@ -163,9 +161,8 @@ class KMeansModel():
                         model.fit(X_train)
                         y_val_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_val]))
                         y_val_pred = self.clusters_mapping(y_val_category, y_val_pred)
-                        y_val_sentiment = self.get_sentiment(y_val_category)
                         y_val_pred_sentiment = self.get_sentiment(y_val_pred)
-                        accuracy = self.get_accuracy(y_val_sentiment, y_val_pred_sentiment)
+                        accuracy = self.get_accuracy(y0_val, y_val_pred_sentiment)
                         if accuracy > max_accuracy:
                             current_best_model = model
                             max_accuracy = accuracy
@@ -182,17 +179,16 @@ class KMeansModel():
             print('The validation accuracy of cluster for the model with highest sentiment accuracy is '+str(cluster_accuracy))
         return current_best_model
 
-    def predict(self, model, X_test, y_test, y_test_list, filename):
-        y_test_category = self.categorize_reaction(y_test_list)
+    def predict(self, model, X_test, y0_test, y_test, filename):
+        y_test_category = self.categorize_reaction(y_test)
         y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
         y_pred = self.clusters_mapping(y_test_category, y_pred)
-        y_test_sentiment = self.get_sentiment(y_test_category)
         y_pred_sentiment = self.get_sentiment(y_pred)
-        sentiment_accuracy = self.get_accuracy(y_test_sentiment, y_pred_sentiment)
+        sentiment_accuracy = self.get_accuracy(y0_test, y_pred_sentiment)
         cluster_accuracy = self.get_accuracy(y_test_category, y_pred)
         df = pd.DataFrame ({'message': X_test,'true_react_angry': y_test[0], 'true_react_haha': y_test[1], 'true_react_like': y_test[2], 'true_react_love': y_test[3], 'true_react_sad': y_test[4], 'true_react_wow': y_test[5], \
             'true_cluster_id': y_test_category, 'pred_cluster_id': y_pred, \
-            'true_sentiment': y_test_sentiment, 'pred_sentiment': y_pred_sentiment})
+            'true_sentiment': y0_test, 'pred_sentiment': y_pred_sentiment})
         df.to_csv(filename+'.csv', index=False)  
         
         print('The prediction accuracy of clusters is '+str(sentiment_accuracy))

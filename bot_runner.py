@@ -22,6 +22,27 @@ def read_csv_to_df():
             val_ratio = float(line.split('=',1)[1])
     return post_df, comment_df, train_ratio, test_ratio, val_ratio
 
+def get_sentiment(reactions):
+    max_reactions = []
+    for i in range(len(reactions[0])):
+        max_reaction = None
+        max_reaction_count = 0
+        for j in range(len(reactions)):
+            if reactions[j][i] > max_reaction_count:
+                max_reaction_count = reactions[j][i]
+                max_reaction = j
+        max_reactions.append(max_reaction)
+
+    sentiment = [0]*len(max_reactions)
+    for i in range(len(max_reactions)):
+        if max_reactions[i] == 2 or max_reactions[i] == 3:
+            sentiment[i] = 1
+        elif max_reactions[i] == 0 or max_reactions[i] == 4:
+            sentiment[i] == -1
+        else:
+            sentiment[i] == 0
+    return sentiment
+
 def train_test_val_split(df, type, train_ratio, test_ratio, val_ratio=0):
     # train test ratio should sum up to 1 if val ratio is not provided
     # otherwise, the three ratios should sum up to 1
@@ -31,13 +52,14 @@ def train_test_val_split(df, type, train_ratio, test_ratio, val_ratio=0):
     else:
         if type == 'post':
             X = df['message'].to_list()
-            y0 = df['label'].to_list()
+            # y0 = df['label'].to_list()
             y1 = df['react_angry'].to_list()
             y2 = df['react_haha'].to_list()
             y3 = df['react_like'].to_list()
             y4 = df['react_love'].to_list()
             y5 = df['react_sad'].to_list()
             y6 = df['react_wow'].to_list()
+            y0 = get_sentiment([y1, y2, y3, y4, y5, y6])
             X_train, X_test, y0_train, y0_test, y1_train, y1_test, y2_train, y2_test, y3_train, y3_test, \
             y4_train, y4_test, y5_train, y5_test, y6_train, y6_test = train_test_split(X, y0, y1, y2, y3, y4, y5, y6, test_size=test_ratio, random_state=1)
             X_val = y0_val = y1_val = y2_val = y3_val = y4_val = y5_val = y6_val = None
@@ -55,24 +77,31 @@ def main():
     #           so the models are only comparable from the same run
     post_data_list = train_test_val_split(post_df, 'post', train_ratio, test_ratio, val_ratio)
     if post_data_list is not None:
-        # baseline: gaussian naive bayers
-        gnb = GNBModel()
-        model = gnb.train(post_data_list[0], post_data_list[2])
-        gnb.predict(model, post_data_list[16], post_data_list[17], 'gnb')
-        
-        # method 1: sgd model
-        sgd = StochasticGradientDescent()
-        model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3], losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
-        sgd.predict(model, post_data_list[16], post_data_list[17], 'sgd')
+        X_train = post_data_list[0]
+        X_val = post_data_list[1]
+        y0_train = post_data_list[2]
+        y0_val = post_data_list[3]
+        X_test = post_data_list[16]
+        y0_test = post_data_list[17]
 
-        # method 2: kmeans model
+        # baseline: gaussian naive bayes
+        gnb = GNBModel()
+        model = gnb.train(X_train, y0_train)
+        gnb.predict(model, X_test, y0_test, 'gnb')
+
+        # method 1: kmeans model
         kmeans = KMeansModel()
-        model = kmeans.train(post_data_list[0], post_data_list[1], post_data_list[10:16], n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
-        kmeans.predict(model, post_data_list[16], post_data_list[18:], post_data_list[18:], 'kmeans')
+        model = kmeans.train(X_train, X_val, y0_val, post_data_list[10:16], n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
+        kmeans.predict(model, X_test, y0_test, post_data_list[18:], 'kmeans')
+        
+        # method 2: sgd model
+        sgd = StochasticGradientDescent()
+        model = sgd.train(X_train, y0_train, X_val, y0_val, losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
+        sgd.predict(model, X_test, y0_test, 'sgd')
 
         # method 3: svm model 
         svm = SVMModel()
-        model = svm.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3], kernels=['linear', 'poly', 'rbf', 'sigmoid'], gammas=['auto', 'scale'], tols=[1e-5, 1e-4, 1e-3], max_iters=[300, 500])
-        svm.predict(model, post_data_list[16], post_data_list[17], 'svm')
+        model = svm.train(X_train, y0_train, X_val, y0_val, kernels=['linear', 'poly', 'rbf', 'sigmoid'], gammas=['auto', 'scale'], tols=[1e-5, 1e-4, 1e-3], max_iters=[300, 500])
+        svm.predict(model, X_test, y0_test, 'svm')
 if __name__ == '__main__':
    main()

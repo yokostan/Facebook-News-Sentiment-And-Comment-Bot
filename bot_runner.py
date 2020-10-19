@@ -82,12 +82,15 @@ def train_test_val_split(df, type, train_ratio, test_ratio, val_ratio=0):
 
 def main():
     post_df, comment_df, train_ratio, test_ratio, val_ratio = read_csv_to_df()
+    # switch for two problems
+    sentiment_analysis = True
+    comment_generation = False
     # problem 1: sentiment analysis
     # reminder: the data split is different each time we run the program
     #           so the models are only comparable from the same run
     post_df = remove_null_rows(post_df)
     post_data_list = train_test_val_split(post_df, 'post', train_ratio, test_ratio, val_ratio)
-    if post_data_list is not None:
+    if post_data_list is not None and sentiment_analysis is True:
         X_train = post_data_list[0]
         X_val = post_data_list[1]
         y0_train = post_data_list[2]

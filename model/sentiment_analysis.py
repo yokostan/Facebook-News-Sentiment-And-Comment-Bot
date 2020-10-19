@@ -2,11 +2,13 @@
 import heapq
 import numpy as np
 import pandas as pd
+from sklearn import svm
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics.cluster import adjusted_rand_score
+from sklearn.preprocessing import StandardScaler
 
 class StochasticGradientDescent:
     def __init__(self):
@@ -171,4 +173,51 @@ class KMeansModel():
         
         print('The prediction accuracy of clusters is '+str(sentiment_accuracy))
         print('The prediction accuracy of sentiment is '+str(cluster_accuracy))
+        print('---------------------------------------------------------------------------')
+
+class SVMModel():
+    def __init__(self):
+        self.count_vect = CountVectorizer()
+
+    def train(self, X_train, y_train, X_val, y_val, kernels=None, gammas=None, tols=None, max_iters=None):
+        def get_param(param, default):
+            return param if param is not None else default  
+        X_train = self.count_vect.fit_transform(['' if x is np.nan else x for x in X_train]) 
+        if len(X_val) > 0: # we have val data to tune the params
+            max_accuracy = 0
+            current_best_model = None
+            index = 0
+            kernels = get_param(kernels, ['rbf'])
+            gammas = get_param(gammas,['scale'])
+            tols = get_param(tols,[1e-3])
+            max_iters = get_param(max_iters,[300])
+            for kernel in kernels:
+                for gamma in gammas:
+                    for tol in tols:
+                        for max_iter in max_iters:
+                            print("Number "+str(index)+" training started")
+                            model = svm.SVC(kernel=kernel, gamma=gamma, tol=tol, max_iter=max_iter)
+                            model.fit(X_train, y_train)
+                            y_val_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_val]))
+                            accuracy = accuracy_score(y_val, y_val_pred)
+                            if accuracy > max_accuracy:
+                                current_best_model = model
+                                max_accuracy = accuracy
+                            index += 1             
+        else:
+            print("training started")
+            current_best_model = svm.SVC()
+            current_best_model.fit(X_train, y_train)
+        print('The parameters of the best model are: ')
+        print(current_best_model)
+        if len(X_val) > 0:
+            print('The validation accuracy is '+str(max_accuracy))
+        return current_best_model
+
+    def predict(self, model, X_test, y_test, filename):
+        y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
+        df = pd.DataFrame ({'message': X_test,'true_react_angry': y_test[0], 'true_react_haha': y_test[1], 'true_react_like': y_test[2], 'true_react_love': y_test[3], 'true_react_sad': y_test[4], 'true_react_wow': y_test[5], \
+            'true_label': y_test, 'pred_label': y_pred})
+        df.to_csv(filename+'.csv', index=False)  
+        print('The prediction accuracy is '+str(accuracy_score(y_test, y_pred)))
         print('---------------------------------------------------------------------------')

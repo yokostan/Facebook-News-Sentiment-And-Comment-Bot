@@ -5,29 +5,29 @@ import pandas as pd
 from sklearn import svm
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics.cluster import adjusted_rand_score
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 
-class LogisticRegressionModel:
+class GNBModel:
     def __init__(self):
         self.count_vect = CountVectorizer()
 
     def train(self, X_train, y_train):
         def get_param(param, default):
             return param if param is not None else default   
-        X_train = self.count_vect.fit_transform(['' if x is np.nan else x for x in X_train])
+        X_train = self.count_vect.fit_transform(['' if x is np.nan else x for x in X_train]).toarray()
         print("training started")
-        current_best_model = LogisticRegression(random_state=0)
+        current_best_model = GaussianNB()
         current_best_model.fit(X_train, y_train)
         print('The parameters of the best model are: ')
         print(current_best_model)
         return current_best_model
 
     def predict(self, model, X_test, y_test, filename):
-        y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
+        y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]).toarray())
         df = pd.DataFrame ({'message': X_test,'true_label': y_test,'pred_label': y_pred})
         df.to_csv(filename+'.csv', index=False)  
         print('The prediction accuracy is '+str(accuracy_score(y_test, y_pred)))

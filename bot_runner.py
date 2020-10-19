@@ -4,7 +4,7 @@
 #   part 2: comment generation
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from model.sentiment_analysis import LogisticRegressionModel, KMeansModel, StochasticGradientDescent, SVMModel
+from model.sentiment_analysis import GNBModel, KMeansModel, StochasticGradientDescent, SVMModel
 
 def read_csv_to_df():
     file = open('.config', "r")
@@ -55,10 +55,10 @@ def main():
     #           so the models are only comparable from the same run
     post_data_list = train_test_val_split(post_df, 'post', train_ratio, test_ratio, val_ratio)
     if post_data_list is not None:
-        # baseline sgd model
-        lr = LogisticRegressionModel()
-        model = lr.train(post_data_list[0], post_data_list[2])
-        lr.predict(model, post_data_list[16], post_data_list[17], 'lr')
+        # baseline: gaussian naive bayers
+        gnb = GNBModel()
+        model = gnb.train(post_data_list[0], post_data_list[2])
+        gnb.predict(model, post_data_list[16], post_data_list[17], 'gnb')
         
         # method 1: sgd model
         sgd = StochasticGradientDescent()

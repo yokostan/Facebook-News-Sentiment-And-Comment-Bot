@@ -4,7 +4,7 @@
 #   part 2: comment generation
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from model.sentiment_analysis import KMeansModel, StochasticGradientDescent, SVMModel
+from model.sentiment_analysis import LogisticRegressionModel, KMeansModel, StochasticGradientDescent, SVMModel
 
 def read_csv_to_df():
     file = open('.config', "r")
@@ -55,14 +55,15 @@ def main():
     #           so the models are only comparable from the same run
     post_data_list = train_test_val_split(post_df, 'post', train_ratio, test_ratio, val_ratio)
     if post_data_list is not None:
+        # baseline sgd model
+        lr = LogisticRegressionModel()
+        model = lr.train(post_data_list[0], post_data_list[2])
+        lr.predict(model, post_data_list[16], post_data_list[17], 'lr')
+        
         # method 1: sgd model
         sgd = StochasticGradientDescent()
-        # baseline: using default values for parameters
-        model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3])
-        sgd.predict(model, post_data_list[16], post_data_list[17], 'sgd_baseline')
-        # sgd model with tuned paramters
         model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3], losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
-        sgd.predict(model, post_data_list[16], post_data_list[17], 'sgd_tuned')
+        sgd.predict(model, post_data_list[16], post_data_list[17], 'sgd')
 
         # method 2: kmeans model
         kmeans = KMeansModel()

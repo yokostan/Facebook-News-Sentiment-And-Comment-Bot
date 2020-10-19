@@ -68,7 +68,8 @@ class StochasticGradientDescent:
             max_accuracy = accuracy_score(y_val, y_val_pred)
         print('The parameters of the best model are: ')
         print(current_best_model)
-        print('The validation accuracy is '+str(max_accuracy))
+        if len(X_val) > 0:
+            print('The validation accuracy is '+str(max_accuracy))
         return current_best_model
 
     def predict(self, model, X_test, y_test, filename):
@@ -183,15 +184,15 @@ class KMeansModel():
 
     def predict(self, model, X_test, y_test, y_test_list, filename):
         y_test_category = self.categorize_reaction(y_test_list)
-        y_test_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
-        y_test_pred = self.clusters_mapping(y_test_category, y_test_pred)
+        y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
+        y_pred = self.clusters_mapping(y_test_category, y_pred)
         y_test_sentiment = self.get_sentiment(y_test_category)
-        y_test_pred_sentiment = self.get_sentiment(y_test_pred)
-        sentiment_accuracy = self.get_accuracy(y_test_sentiment, y_test_pred_sentiment)
-        cluster_accuracy = self.get_accuracy(y_test_category, y_test_pred)
+        y_pred_sentiment = self.get_sentiment(y_pred)
+        sentiment_accuracy = self.get_accuracy(y_test_sentiment, y_pred_sentiment)
+        cluster_accuracy = self.get_accuracy(y_test_category, y_pred)
         df = pd.DataFrame ({'message': X_test,'true_react_angry': y_test[0], 'true_react_haha': y_test[1], 'true_react_like': y_test[2], 'true_react_love': y_test[3], 'true_react_sad': y_test[4], 'true_react_wow': y_test[5], \
-            'true_cluster_id': y_test_category, 'pred_cluster_id': y_test_pred, \
-            'true_sentiment': y_test_sentiment, 'pred_sentiment': y_test_pred_sentiment})
+            'true_cluster_id': y_test_category, 'pred_cluster_id': y_pred, \
+            'true_sentiment': y_test_sentiment, 'pred_sentiment': y_pred_sentiment})
         df.to_csv(filename+'.csv', index=False)  
         
         print('The prediction accuracy of clusters is '+str(sentiment_accuracy))

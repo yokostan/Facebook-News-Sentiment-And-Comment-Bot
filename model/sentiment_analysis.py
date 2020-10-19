@@ -135,9 +135,7 @@ class KMeansModel():
             if reactions[i] == 2 or reactions[i] == 3:
                 sentiment[i] = 1
             elif reactions[i] == 0 or reactions[i] == 4:
-                sentiment[i] == -1
-            else:
-                sentiment[i] == 0
+                sentiment[i] = -1
         return sentiment
 
     def train(self, X_train, X_val, y0_val, y_val_list, n_clusters_list=None, tols=None, max_iters=None):
@@ -234,10 +232,10 @@ class SVMModel():
             print('The validation accuracy is '+str(max_accuracy))
         return current_best_model
 
-    def predict(self, model, X_test, y_test, filename):
+    def predict(self, model, X_test, y0_test, y_test, filename):
         y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
         df = pd.DataFrame ({'message': X_test,'true_react_angry': y_test[0], 'true_react_haha': y_test[1], 'true_react_like': y_test[2], 'true_react_love': y_test[3], 'true_react_sad': y_test[4], 'true_react_wow': y_test[5], \
-            'true_label': y_test, 'pred_label': y_pred})
+            'true_label': y0_test, 'pred_label': y_pred})
         df.to_csv(filename+'.csv', index=False)  
-        print('The prediction accuracy is '+str(accuracy_score(y_test, y_pred)))
+        print('The prediction accuracy is '+str(accuracy_score(y0_test, y_pred)))
         print('---------------------------------------------------------------------------')

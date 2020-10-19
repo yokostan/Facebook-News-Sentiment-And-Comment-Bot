@@ -48,9 +48,7 @@ def get_sentiment(reactions):
         if max_reactions[i] == 2 or max_reactions[i] == 3:
             sentiment[i] = 1
         elif max_reactions[i] == 0 or max_reactions[i] == 4:
-            sentiment[i] == -1
-        else:
-            sentiment[i] == 0
+            sentiment[i] = -1
     return sentiment
 
 def train_test_val_split(df, type, train_ratio, test_ratio, val_ratio=0):
@@ -116,6 +114,6 @@ def main():
         # method 3: svm model 
         svm = SVMModel()
         model = svm.train(X_train, y0_train, X_val, y0_val, kernels=['linear', 'poly', 'rbf', 'sigmoid'], gammas=['auto', 'scale'], tols=[1e-5, 1e-4, 1e-3], max_iters=[300, 500])
-        svm.predict(model, X_test, y0_test, 'svm')
+        svm.predict(model, X_test, y0_test, post_data_list[18:], 'svm')
 if __name__ == '__main__':
    main()

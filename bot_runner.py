@@ -4,7 +4,7 @@
 #   part 2: comment generation
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from model.sentiment_analysis import StochasticGradientDescent
+from model.sentiment_analysis import KMeansModel, StochasticGradientDescent
 
 def read_csv_to_df():
     file = open('.config', "r")
@@ -64,5 +64,9 @@ def main():
         model = sgd.train(post_data_list[0], post_data_list[2], post_data_list[1], post_data_list[3], losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
         sgd.predict(model, post_data_list[16], post_data_list[17], 'sgd_tuned')
 
+        # method 2: kmeans model
+        kmeans = KMeansModel()
+        model = kmeans.train(post_data_list[0], post_data_list[1], post_data_list[10:16], n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
+        kmeans.predict(model, post_data_list[16], post_data_list[18:], post_data_list[18:], 'kmeans')
 if __name__ == '__main__':
    main()

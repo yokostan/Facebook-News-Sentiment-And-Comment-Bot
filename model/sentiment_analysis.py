@@ -93,18 +93,22 @@ class KMeansModel():
     def clusters_mapping(self, y_category, y_pred):
             cluster_cluster_map = {}
             for i in range(len(y_category)):
-                temp_list = [[0,0]]*len(y_pred)
                 if y_pred[i] not in cluster_cluster_map:
-                    temp_list = [[y_category[i], 1]]
+                    cluster_cluster_map[y_pred[i]] = [[y_category[i], 1]]
                 else:
                     value_list = cluster_cluster_map.get(y_pred[i])
+                    temp_list = []
+                    value_cluster_flag = False
                     for j in range(len(value_list)):
                         if value_list[j][0] != y_category[i]:
-                            temp_list[j] = value_list[j]
+                            temp_list.append(value_list[j])
                         else:
-                            temp_list[j] = [value_list[j][0], value_list[j][1]+1]
-                cluster_cluster_map[y_pred[i]] = temp_list
-            
+                            temp_list.append([value_list[j][0], value_list[j][1]+1])
+                            value_cluster_flag = True
+                    if value_cluster_flag is False:
+                        temp_list.append([y_category[i], 1])
+                    cluster_cluster_map[y_pred[i]] = temp_list
+
             cluster_index_map = {}
             for key in cluster_cluster_map:
                 value_list = cluster_cluster_map.get(key)
@@ -176,13 +180,13 @@ class KMeansModel():
 
     def predict(self, model, X_test, y0_test, y_test, filename):
         y_test_category = self.categorize_reaction(y_test)
-        y_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
-        y_pred = self.clusters_mapping(y_test_category, y_pred)
+        y_pred_original = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
+        y_pred = self.clusters_mapping(y_test_category, y_pred_original)
         y_pred_sentiment = self.get_sentiment(y_pred)
         sentiment_accuracy = self.get_accuracy(y0_test, y_pred_sentiment)
         cluster_accuracy = self.get_accuracy(y_test_category, y_pred)
         df = pd.DataFrame ({'message': X_test,'true_react_angry': y_test[0], 'true_react_haha': y_test[1], 'true_react_like': y_test[2], 'true_react_love': y_test[3], 'true_react_sad': y_test[4], 'true_react_wow': y_test[5], \
-            'true_cluster_id': y_test_category, 'pred_cluster_id': y_pred, \
+            'true_cluster_id': y_test_category, 'pred_cluster_id': y_pred, 'original_pred_cluster_id': y_pred_original, \
             'true_sentiment': y0_test, 'pred_sentiment': y_pred_sentiment})
         df.to_csv(filename+'.csv', index=False)  
         

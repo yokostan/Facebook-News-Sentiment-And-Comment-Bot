@@ -1,3 +1,6 @@
 *.csv
 *.pyc
 *.png
+*.sav
+.DS_Store
+.python-version

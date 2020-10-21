@@ -6,8 +6,8 @@ import csv
 import difflib
 import numpy as np
 import pandas as pd
-import pickle
 from sklearn.model_selection import train_test_split
+from model.comment_generation import KMeansCluster
 from model.sentiment_analysis import GNBModel, KMeansModel, StochasticGradientDescent, SVMModel
 
 def read_csv_to_df():
@@ -138,51 +138,51 @@ def main():
     # switch for two problems
     sentiment_analysis = False
     comment_generation = True
-    # problem 1: sentiment analysis
-    # reminder: the data split is different each time we run the program
-    #           so the models are only comparable from the same run
+    X_train_cluster = []
+    X_val_cluster = []
+
     post_df = remove_null_rows(post_df)
     post_data_list = train_test_val_split(post_df, 'post', train_ratio, test_ratio, val_ratio)
-    if post_data_list is not None and sentiment_analysis is True:
+    if post_data_list is not None:
+        # problem 1: sentiment analysis
+        # reminder: the data split is different each time we run the program
+        #           so the models are only comparable from the same run
         X_train = post_data_list[0]
         X_val = post_data_list[1]
         y0_train = post_data_list[2]
         y0_val = post_data_list[3]
         X_test = post_data_list[16]
         y0_test = post_data_list[17]
-
-        # baseline: gaussian naive bayes
-        gnb = GNBModel()
-        model = gnb.train(X_train, y0_train)
-        gnb.predict(model, X_test, y0_test, 'gnb')
-
-        # method 1: kmeans model
-        kmeans = KMeansModel()
-        model = kmeans.train(X_train, X_val, y0_val, post_data_list[10:16], n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
-        kmeans.predict(model, X_test, y0_test, post_data_list[18:], 'kmeans')
-        pickle.dump(model, open('kmeans_model.sav', 'wb'))
         
-        # method 2: sgd model
-        sgd = StochasticGradientDescent()
-        model = sgd.train(X_train, y0_train, X_val, y0_val, losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
-        sgd.predict(model, X_test, y0_test, 'sgd')
+        if sentiment_analysis is True:
+            # baseline: gaussian naive bayes
+            gnb = GNBModel()
+            model = gnb.train(X_train, y0_train)
+            gnb.predict(model, X_test, y0_test, 'gnb')
+            
+            # method 1: sgd model
+            sgd = StochasticGradientDescent()
+            model = sgd.train(X_train, y0_train, X_val, y0_val, losses=['hinge', 'log', 'squared_loss'], learning_rates=['optimal'], tols=[1e-5, 1e-4, 1e-3], max_iter=500)
+            sgd.predict(model, X_test, y0_test, 'sgd')
 
-        # method 3: svm model 
-        svm = SVMModel()
-        model = svm.train(X_train, y0_train, X_val, y0_val, kernels=['linear', 'poly', 'rbf', 'sigmoid'], gammas=['auto', 'scale'], tols=[1e-5, 1e-4, 1e-3], max_iters=[300, 500])
-        svm.predict(model, X_test, y0_test, post_data_list[18:], 'svm')
+            # method 2: svm model 
+            svm = SVMModel()
+            model = svm.train(X_train, y0_train, X_val, y0_val, kernels=['linear', 'poly', 'rbf', 'sigmoid'], gammas=['auto', 'scale'], tols=[1e-5, 1e-4, 1e-3], max_iters=[300, 500])
+            svm.predict(model, X_test, y0_test, post_data_list[18:], 'svm')
 
-    # problem 2: comment generation
-    # comment_df = remove_null_rows(comment_df) # removed because this takes time and there is no null row in comment
-    if comment_generation is True:
-        post_comment_dict = generate_post_comment_nested_dict(post_df, comment_df, 2)
-        post_comment_dict_list = transform_dict_to_list(post_comment_dict)
-        X_train, X_val, X_test, y_train, y_val, y_test = train_test_val_split(post_comment_dict_list, 'comment', train_ratio, test_ratio, val_ratio)
+        if sentiment_analysis is True or comment_generation is True:
+            # method 3: kmeans model
+            kmeans = KMeansModel()
+            model, X_train_cluster, X_val_cluster = kmeans.train(X_train, X_val, y0_val, post_data_list[10:16]), n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
+            X_test_cluster = kmeans.predict(model, X_test, y0_test, post_data_list[18:], 'kmeans')
 
-        if all(v is not None for v in [X_train, X_val, X_test, y_train, y_val, y_test]):
-            # baseline: kmeans/logistic with vanilla markov chain
-            loaded_model = pickle.load(open('fkmeans_model.sav', 'rb'))
-            result = loaded_model.score(X_val, Y_val)
+
+        # problem 2: comment generation
+        # comment_df = remove_null_rows(comment_df) # removed because this takes time and there is no null row in comment
+        if comment_generation is True:
+            post_comment_dict = generate_post_comment_nested_dict(post_df, comment_df, 2)
+            post_comment_dict_list = transform_dict_to_list(post_comment_dict)
+            X_train, X_val, X_test, y_train, y_val, y_test = train_test_val_split(post_comment_dict_list, 'comment', train_ratio, test_ratio, val_ratio)
 
 if __name__ == '__main__':
    main()

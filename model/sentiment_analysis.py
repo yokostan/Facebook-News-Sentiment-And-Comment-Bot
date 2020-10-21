@@ -143,7 +143,8 @@ class KMeansModel():
         def get_param(param, default):
             return param if param is not None else default  
 
-        X_train = self.count_vect.fit_transform(['' if x is np.nan else x for x in X_train]) 
+        X_train_vector = self.count_vect.fit_transform(['' if x is np.nan else x for x in X_train]) 
+        X_val_vector = self.count_vect.transform(['' if x is np.nan else x for x in X_val])
         y_val_category = self.categorize_reaction(y_val_list)
         if len(X_val) > 0: # we have val data to tune the params
             max_accuracy = 0
@@ -157,8 +158,8 @@ class KMeansModel():
                     for max_iter in max_iters:
                         print("Number "+str(index)+" training started")
                         model = KMeans(n_clusters=n_clusters, max_iter=max_iter, tol=tol, random_state=10)
-                        model.fit(X_train)
-                        y_val_pred = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_val]))
+                        model.fit(X_train_vector)
+                        y_val_pred = model.predict(X_val_vector)
                         y_val_pred = self.clusters_mapping(y_val_category, y_val_pred)
                         y_val_pred_sentiment = self.get_sentiment(y_val_pred)
                         accuracy = self.get_accuracy(y0_val, y_val_pred_sentiment)
@@ -170,17 +171,18 @@ class KMeansModel():
         else:
             print("training started")
             current_best_model = KMeans(n_clusters=6, max_iter=300, tol=1e-4, random_state=10)
-            current_best_model.fit(X_train)
+            current_best_model.fit(X_train_vector)
         print('The parameters of the best model are: ')
         print(current_best_model)
         if len(X_val) > 0:
             print('The validation accuracy of sentiment is '+str(max_accuracy))
             print('The validation accuracy of cluster for the model with highest sentiment accuracy is '+str(cluster_accuracy))
-        return current_best_model
+        return current_best_model, current_best_model.predict(X_train_vector), current_best_model.predict(X_val_vector)
 
     def predict(self, model, X_test, y0_test, y_test, filename):
+        X_test_vector = self.count_vect.transform(['' if x is np.nan else x for x in X_test])
         y_test_category = self.categorize_reaction(y_test)
-        y_pred_original = model.predict(self.count_vect.transform(['' if x is np.nan else x for x in X_test]))
+        y_pred_original = model.predict(X_test_vector)
         y_pred = self.clusters_mapping(y_test_category, y_pred_original)
         y_pred_sentiment = self.get_sentiment(y_pred)
         sentiment_accuracy = self.get_accuracy(y0_test, y_pred_sentiment)
@@ -193,6 +195,8 @@ class KMeansModel():
         print('The prediction accuracy of clusters is '+str(sentiment_accuracy))
         print('The prediction accuracy of sentiment is '+str(cluster_accuracy))
         print('---------------------------------------------------------------------------')
+
+        return y_pred_original
 
 class SVMModel():
     def __init__(self):

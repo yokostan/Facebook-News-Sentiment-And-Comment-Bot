@@ -2,5 +2,7 @@
 *.pyc
 *.png
 *.sav
+*.txt
 .DS_Store
 .python-version
+markov_text_dict

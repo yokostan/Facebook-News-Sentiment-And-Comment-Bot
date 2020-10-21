@@ -2,12 +2,10 @@
 # the bot_runner is composed of two part
 #   part 1: sentiment analysis
 #   part 2: comment generation
-import csv
-import difflib
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from model.comment_generation import KMeansCluster
+from model.comment_generation import Markov
 from model.sentiment_analysis import GNBModel, KMeansModel, StochasticGradientDescent, SVMModel
 
 def read_csv_to_df():
@@ -102,35 +100,44 @@ def generate_post_comment_nested_dict(post, comment, n):
     comment = comment.rename(columns={"message": "comment", "post_id": "post_id_1"})
     new_df = pd.merge(post, comment, left_on='post_id', right_on='post_id_1', how='left')[['message', 'comment']]
     
-    # perform n gram to generate word pairs for words in comments
     post_comment_dict = {}
-    for index, row in new_df.iterrows():
-        post = row['message']
-        ngram_list = ngrams(row['comment'], 2)
-        # construct a nested dict where the key is post 
-        # and the value is a word dict for n-gram words from its comments
-        word_dict = post_comment_dict.get(post, {})
-        for word_1, word_2 in ngram_list:
-            if word_1 in word_dict.keys():
-                word_dict[word_1].append(word_2)
-            else:
-                word_dict[word_1] = [word_2]
-        post_comment_dict[post] = word_dict
-    with open('post_comment_dict.csv', 'w') as f:
-        for key in  post_comment_dict.keys():
-            f.write("%s,%s\n"%(key, post_comment_dict[key]))
+    if n == 0: # get post - comment dict
+        for index, row in new_df.iterrows():
+            post = row['message']
+            comment = row['comment']
+            # construct a nested dict where the key is post 
+            # and the value is a list of all comments
+            comment_list = post_comment_dict.get(post, [])
+            comment_list.append(comment)
+            post_comment_dict[post] = comment_list
+    else:  # perform n gram to generate word pairs for words in comments
+        for index, row in new_df.iterrows():
+            post = row['message']
+            ngram_list = ngrams(row['comment'], n)
+            # construct a nested dict where the key is post 
+            # and the value is a word dict for n-gram words from its comments
+            word_dict = post_comment_dict.get(post, {})
+            for word_1, word_2 in ngram_list:
+                if word_1 in word_dict.keys():
+                    word_dict[word_1].append(word_2)
+                else:
+                    word_dict[word_1] = [word_2]
+            post_comment_dict[post] = word_dict
     return post_comment_dict
 
-def transform_dict_to_list(data_dict):
+def transform_dict_to_list(data_dict, word_pair_flag):
     data_list = []
     for key in data_dict:
-        word_pairs = []
-        word_dict = data_dict.get(key)
-        for word_1 in word_dict:
-            for word_2 in word_dict.get(word_1):
-                word_pair = (' ').join([word_1, word_2]) #word_pair = "word1 word2"
-                word_pairs.append(word_pair)
-        data_list.append([key, word_pairs])
+        if word_pair_flag is True:
+            word_pairs = []
+            word_dict = data_dict.get(key)
+            for word_1 in word_dict:
+                for word_2 in word_dict.get(word_1):
+                    word_pair = (' ').join([word_1, word_2]) #word_pair = "word1 word2"
+                    word_pairs.append(word_pair)
+            data_list.append([key, word_pairs])
+        else:
+            data_list.append([key, data_dict.get(key)])
     return data_list
 
 def main():
@@ -173,16 +180,21 @@ def main():
         if sentiment_analysis is True or comment_generation is True:
             # method 3: kmeans model
             kmeans = KMeansModel()
-            model, X_train_cluster, X_val_cluster = kmeans.train(X_train, X_val, y0_val, post_data_list[10:16]), n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
+            model, X_train_cluster, X_val_cluster = kmeans.train(X_train, X_val, y0_val, post_data_list[10:16]) #, n_clusters_list=[6, 12, 18, 24], tols=[1e-6, 1e-5, 1e-3], max_iters=[300, 500])
             X_test_cluster = kmeans.predict(model, X_test, y0_test, post_data_list[18:], 'kmeans')
-
 
         # problem 2: comment generation
         # comment_df = remove_null_rows(comment_df) # removed because this takes time and there is no null row in comment
-        if comment_generation is True:
-            post_comment_dict = generate_post_comment_nested_dict(post_df, comment_df, 2)
-            post_comment_dict_list = transform_dict_to_list(post_comment_dict)
+        if comment_generation is True and all(v is not None for v in [X_train, X_val, X_test]): #, y_train, y_val, y_test]):
+            # step0 kmeans: generate and save markov text dict for cluster from best kmeans model in problem 1
+            post_comment_dict = generate_post_comment_nested_dict(post_df, comment_df, 0) # post - comment dataset
+            post_comment_dict_list = transform_dict_to_list(post_comment_dict, False)
             X_train, X_val, X_test, y_train, y_val, y_test = train_test_val_split(post_comment_dict_list, 'comment', train_ratio, test_ratio, val_ratio)
 
+            # baseline: kmeans + vanilla markov chain
+            markov = Markov()
+            markov_text_dict = markov.generate_markov_text_dict(X_train, X_train_cluster, y_train)
+            markov.train(markov_text_dict)
+                    
 if __name__ == '__main__':
    main()
